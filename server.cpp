@@ -84,24 +84,18 @@ void start(int &server){
 }
 
 void *request(void *client){
-	//int bufSize = 1024; 
-	//char buffer[bufSize]; 
-	//int connection = *((int*) client);
-	//strcpy(buffer, "\n-> Welcome to echo server...\n");
-	//send(connection, buffer, bufSize, 0);
-	//cout << "Se conecto un cliente" <<endl;
 
 	int n = *((int*) client);
 	char mesg[99999], *reqline[3], data_to_send[bufSize], path[99999];
 	int rcvd, fd, bytes_read;
-	//memset( (void*)mesg, (int)'\0', 99999 );
+	
 	rcvd=recv(n, mesg, 99999, 0);
 	
-	if (rcvd<0)    // receive error
+	if (rcvd<0)    
 		fprintf(stderr,("recv() error\n"));
-	else if (rcvd==0)    // receive socket closed
+	else if (rcvd==0)    
 		fprintf(stderr,"Client disconnected unexpectedly.\n");
-	else    // message received
+	else    
 	{
 		cout << "1" <<endl;
 		printf("%s", mesg);
@@ -117,24 +111,24 @@ void *request(void *client){
 			else
 			{
 				if ( strncmp(reqline[1], "/\0", 2)==0 )
-					reqline[1] = "/index.html";        //Because if no file is specified, index.html will be opened by default (like it happens in APACHE...
+					reqline[1] = "/index.html";        
 
 				strcpy(path, "./public");
 				strcpy(&path[strlen("./public")], reqline[1]);
 				printf("file: %s\n", path);
 
-				if ( (fd=open(path, O_RDONLY))!=-1 )    //FILE FOUND
+				if ( (fd=open(path, O_RDONLY))!=-1 )    
 				{
 					send(n, "HTTP/1.0 200 OK\n\n", 17, 0);
 					while ( (bytes_read=read(fd, data_to_send, bufSize))>0 )
 						write (n, data_to_send, bytes_read);
 				}
-				else    write(n, "HTTP/1.0 404 Not Found\n", 23); //FILE NOT FOUND
+				else    write(n, "HTTP/1.0 404 Not Found\n", 23); 
 			}
 		}
 	}
 	//Closing SOCKET
-	shutdown (n, SHUT_RDWR);         //All further send and recieve operations are DISABLED...
+	shutdown (n, SHUT_RDWR);         
 	close(n);
 	n=-1;
 }
