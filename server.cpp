@@ -56,7 +56,6 @@ int main(int argc, char const *argv[]){
 	while (1) {
 		client = accept(server, (struct sockaddr *) &server_addr, &size);
 		pthread_t thread;
-		//recv(client, buffer, bufSize, 0);
 		if(client){
 			pthread_create(&thread, NULL, request, (void*) &client);
 			pool.push_back(thread);
@@ -84,51 +83,47 @@ void start(int &server){
 }
 
 void *request(void *client){
-
-	int n = *((int*) client);
+	int connection = *((int*) client);
 	char mesg[99999], *reqline[3], data_to_send[bufSize], path[99999];
 	int rcvd, fd, bytes_read;
+	rcvd=recv(connection, mesg, 99999, 0);
 	
-	rcvd=recv(n, mesg, 99999, 0);
-	
-	if (rcvd<0)    
+	if (rcvd<0){    
 		fprintf(stderr,("recv() error\n"));
-	else if (rcvd==0)    
+	}else if (rcvd==0){    
 		fprintf(stderr,"Client disconnected unexpectedly.\n");
-	else    
-	{
+	}else{
 		cout << "1" <<endl;
 		printf("%s", mesg);
 		reqline[0] = strtok (mesg, " \t\n");
-		if ( strncmp(reqline[0], "GET\0", 4)==0 )
-		{
+		if ( strncmp(reqline[0], "GET\0", 4) == 0){
 			reqline[1] = strtok (NULL, " \t");
 			reqline[2] = strtok (NULL, " \t\n");
-			if ( strncmp( reqline[2], "HTTP/1.0", 8)!=0 && strncmp( reqline[2], "HTTP/1.1", 8)!=0 )
-			{
-				write(n, "HTTP/1.0 400 Bad Request\n", 25);
-			}
-			else
-			{
-				if ( strncmp(reqline[1], "/\0", 2)==0 )
-					reqline[1] = "/index.html";        
+			if (strncmp(reqline[2], "HTTP/1.0", 8)!=0 && strncmp( reqline[2], "HTTP/1.1", 8)!=0){
+				write(connection, "HTTP/1.0 400 Bad Request\n", 25);
+			}else{
+				if (strncmp(reqline[1], "/\0", 2)==0 ){
+					reqline[1] = (char*) "/index.html";
+				}        
 
 				strcpy(path, "./public");
 				strcpy(&path[strlen("./public")], reqline[1]);
 				printf("file: %s\n", path);
 
-				if ( (fd=open(path, O_RDONLY))!=-1 )    
-				{
-					send(n, "HTTP/1.0 200 OK\n\n", 17, 0);
-					while ( (bytes_read=read(fd, data_to_send, bufSize))>0 )
-						write (n, data_to_send, bytes_read);
+				if ( (fd=open(path, O_RDONLY))!=-1){
+					send(connection, "HTTP/1.0 200 OK\n\n", 17, 0);
+					while ( (bytes_read=read(fd, data_to_send, bufSize))>0){
+						write (connection, data_to_send, bytes_read);
+					}
+				}else {
+					write(connection, "HTTP/1.0 404 Not Found\n", 23); 
 				}
-				else    write(n, "HTTP/1.0 404 Not Found\n", 23); 
 			}
 		}
 	}
-	//Closing SOCKET
-	shutdown (n, SHUT_RDWR);         
-	close(n);
-	n=-1;
+
+
+	shutdown (connection, SHUT_RDWR);         
+	close(connection);
+	connection=-1;
 }
