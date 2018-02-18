@@ -12,6 +12,17 @@
 #include <vector>
 #include<fcntl.h>
 
+#include<stdio.h>
+#include<string.h>
+#include<stdlib.h>
+#include<unistd.h>
+#include<sys/types.h>
+#include<sys/stat.h>
+#include<sys/socket.h>
+#include<arpa/inet.h>
+#include<netdb.h>
+#include<signal.h>
+#include<fcntl.h>
 
 using namespace std;
 
@@ -54,9 +65,10 @@ int main(int argc, char const *argv[]){
 	listen(server, 1);
 
 	
-	while (client = accept(server, (struct sockaddr *) &server_addr, &size)) {
+	while (1) {
+		client = accept(server, (struct sockaddr *) &server_addr, &size);
 		pthread_t thread;
-		recv(client, buffer, bufSize, 0);
+		//recv(client, buffer, bufSize, 0);
 		if(client){
 			pthread_create(&thread, NULL, request, (void*) &client);
 			pool.push_back(thread);
@@ -91,18 +103,16 @@ void *request(void *client){
 	//send(connection, buffer, bufSize, 0);
 	//cout << "Se conecto un cliente" <<endl;
 
-	int n = *((int *) client);
+	int n = *((int*) client);
 	char mesg[99999], *reqline[3], data_to_send[bufSize], path[99999];
 	int rcvd, fd, bytes_read;
-	
-	memset( (void*)mesg, (int)'\0', 99999 );
-	
+	//memset( (void*)mesg, (int)'\0', 99999 );
 	rcvd=recv(n, mesg, 99999, 0);
 	
 	if (rcvd<0)    // receive error
 		fprintf(stderr,("recv() error\n"));
 	else if (rcvd==0)    // receive socket closed
-		fprintf(stderr,"Client disconnected upexpectedly.\n");
+		fprintf(stderr,"Client disconnected unexpectedly.\n");
 	else    // message received
 	{
 		cout << "1" <<endl;
@@ -128,7 +138,6 @@ void *request(void *client){
 				if ( (fd=open(path, O_RDONLY))!=-1 )    //FILE FOUND
 				{
 					send(n, "HTTP/1.0 200 OK\n\n", 17, 0);
-					cout << "Se conecto un cliente" <<endl;
 					while ( (bytes_read=read(fd, data_to_send, bufSize))>0 )
 						write (n, data_to_send, bytes_read);
 				}
@@ -136,9 +145,8 @@ void *request(void *client){
 			}
 		}
 	}
-	cout << "exit" <<endl;
 	//Closing SOCKET
-	//shutdown (n, SHUT_RDWR);         //All further send and recieve operations are DISABLED...
-	//close(n);
-	//n=-1;
+	shutdown (n, SHUT_RDWR);         //All further send and recieve operations are DISABLED...
+	close(n);
+	n=-1;
 }
