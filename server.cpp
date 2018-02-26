@@ -88,6 +88,7 @@ void *request(void *client){
 	int connection = *((int*) client);
 	char mesg[999999], *reqline[3], data_to_send[bufSize], path[99999], *reqline2[7];
 	int rcvd, fd, bytes_read;
+	cout<<"Client connected to server";
 	rcvd=recv(connection, mesg, 99999, 0);	
 	if (rcvd<0){    
 		fprintf(stderr,("recv() error\n"));
@@ -95,6 +96,7 @@ void *request(void *client){
 		fprintf(stderr,"Client disconnected unexpectedly.\n");
 	}else{
 		string head(mesg);
+
 		reqline[0] = strtok (mesg, " \t\n");
 		if (strncmp(reqline[0], "GET\0", 4) == 0){
 			reqline[1] = strtok (NULL, " \t");
@@ -115,7 +117,13 @@ void *request(void *client){
 						write (connection, data_to_send, bytes_read);
 					}
 				}else {
-					write(connection, "HTTP/1.0 404 Not Found\n", 23); 
+					fd=open("./public/notfound.html", O_RDONLY);
+					send(connection, "HTTP/1.0 200 OK\n\n", 17, 0);
+					while ( (bytes_read=read(fd, data_to_send, bufSize))>0){
+						write (connection, data_to_send, bytes_read);
+					}
+				
+
 				}
 			}
 		}else if (strncmp(reqline[0], "POST\0", 4) == 0){
@@ -123,7 +131,8 @@ void *request(void *client){
 			int number = rand() % 100 + 1;
 			string name = "./public/file-";
 			string extension = ".html";
-			string filename =  name + to_string(number) + extension;
+			string pal=number+"";
+			string filename =  name + pal + extension;
 			ofstream file;
 			file.open (filename.c_str());
 			file << head;
@@ -138,7 +147,32 @@ void *request(void *client){
 				write(connection, "HTTP/1.0 404 Not Found\n", 23); 
 			}
 		}else if (strncmp(reqline[0], "PUT\0", 4) == 0){
-
+			string pam=reqline[0];
+			string pem=pam.substr(0,pam.size()-4);
+			reqline[1] = strtok (NULL, " \t");
+		
+			reqline[2] = strtok (NULL, " \t\n");
+			string 	vi=reqline[1];
+			string filename ="./public/"+ vi;
+			
+			if ((fd=open(filename.c_str(), O_RDONLY))!=-1){
+				ofstream file;
+				file.open (filename.c_str());
+				file << head;
+	
+				file << "\n";
+				file.close();
+				send(connection, "HTTP/1.0 200 OK\n\n", 17, 0);
+				while ( (bytes_read=read(fd, data_to_send, bufSize))>0){
+					write (connection, data_to_send, bytes_read);
+				}
+			}else {
+				fd=open("./public/notfound.html", O_RDONLY);
+				send(connection, "HTTP/1.0 200 OK\n\n", 17, 0);
+				while ( (bytes_read=read(fd, data_to_send, bufSize))>0){
+					write (connection, data_to_send, bytes_read);
+				}
+			}	
 		}
 	}
 
